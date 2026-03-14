@@ -4,7 +4,7 @@ import { CameraView, useCameraPermissions } from 'expo-camera';
 import { scanBarcode } from '../services/api';
 import { saveToHistory } from '../services/history';
 
-export default function ScanScreen({ navigation }) {
+export default function ScanScreen({ navigation }: any) {
   const [permission, requestPermission] = useCameraPermissions();
   const [scanning, setScanning] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -13,7 +13,7 @@ export default function ScanScreen({ navigation }) {
     if (!permission?.granted) requestPermission();
   }, []);
 
-  const handleBarcodeScanned = async ({ data: barcode }) => {
+const handleBarcodeScanned = async ({ data: barcode }: any) => {
     if (!scanning || loading) return;
     setScanning(false);
     setLoading(true);
@@ -48,17 +48,26 @@ export default function ScanScreen({ navigation }) {
         barcodeScannerSettings={{ barcodeTypes: ['ean13', 'ean8', 'upc_a', 'upc_e'] }}
         onBarcodeScanned={scanning ? handleBarcodeScanned : undefined}
       />
+
       <View style={styles.overlay}>
         <View style={styles.scanFrame} />
         <Text style={styles.hint}>
           {loading ? 'Looking up product...' : 'Point at a barcode'}
         </Text>
       </View>
+
       {!scanning && !loading && (
         <TouchableOpacity style={styles.rescanBtn} onPress={() => setScanning(true)}>
           <Text style={styles.rescanText}>Scan Again</Text>
         </TouchableOpacity>
       )}
+
+      <TouchableOpacity
+        style={styles.historyBtn}
+        onPress={() => navigation.navigate('History')}
+      >
+        <Text style={styles.historyText}>View History</Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -83,6 +92,12 @@ const styles = StyleSheet.create({
     paddingVertical: 14, borderRadius: 30,
   },
   rescanText: { fontSize: 16, fontWeight: '600', color: '#000' },
+  historyBtn: {
+    position: 'absolute', bottom: 20, alignSelf: 'center',
+    paddingHorizontal: 24, paddingVertical: 10,
+    backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 20,
+  },
+  historyText: { color: '#fff', fontSize: 14 },
   message: { fontSize: 16, textAlign: 'center', marginBottom: 20 },
   button: { backgroundColor: '#000', padding: 16, borderRadius: 10 },
   buttonText: { color: '#fff', fontSize: 15 },
