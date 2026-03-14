@@ -30,10 +30,10 @@ export default function ScanScreen({ navigation }: any) {
 
       if (!fetchResult.found) {
         const reason = {
-          not_found: 'This product was not found in the database.',
-          network_error: 'Network error. Please check your connection.',
-          timeout: 'Request timed out. Please try again.',
-        }[fetchResult.reason];
+          not_found: 'This product was not found in the Open Food Facts database.',
+          network_error: 'Network error. Please check your connection and try again.',
+          timeout: 'Request timed out. The API may be slow. Please try again.',
+        }[fetchResult.reason] ?? 'An unexpected error occurred.';
         Alert.alert('Could not load product', reason, [
           { text: 'Try Again', onPress: () => setScanning(true) },
         ]);
