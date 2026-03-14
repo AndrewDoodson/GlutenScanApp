@@ -1,13 +1,8 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { getHistory, clearHistory, ScanRecord } from '../services/history';
-
-const STATUS_LABELS = {
-  contains_gluten: { label: 'Contains Gluten', color: '#C0392B', bg: '#FDEDEC' },
-  no_gluten_detected: { label: 'No Gluten', color: '#1E8449', bg: '#EAFAF1' },
-  unknown_product: { label: 'Unknown', color: '#B7950B', bg: '#FEF9E7' },
-};
+import { getHistory, clearHistory } from '../services/scanHistory';
+import { ScanRecord, DietResult } from '../types';
 
 export default function HistoryScreen() {
   const [history, setHistory] = useState<ScanRecord[]>([]);
@@ -21,6 +16,17 @@ export default function HistoryScreen() {
   const handleClear = async () => {
     await clearHistory();
     setHistory([]);
+  };
+
+  const getOverallStatus = (dietResults: DietResult[]) => {
+    if (!dietResults || dietResults.length === 0) {
+      return { label: 'Unknown', color: '#B7950B', bg: '#FEF9E7' };
+    }
+    const hasIssue = dietResults.some(r => r.status === 'not_compatible');
+    const allUnknown = dietResults.every(r => r.status === 'unknown');
+    if (allUnknown) return { label: 'No data', color: '#B7950B', bg: '#FEF9E7' };
+    if (hasIssue) return { label: 'Not compatible', color: '#C0392B', bg: '#FDEDEC' };
+    return { label: 'Compatible', color: '#1E8449', bg: '#EAFAF1' };
   };
 
   if (history.length === 0) {
@@ -37,16 +43,16 @@ export default function HistoryScreen() {
         data={history}
         keyExtractor={(_, i) => i.toString()}
         renderItem={({ item }) => {
-          const config = STATUS_LABELS[item.status];
+          const status = getOverallStatus(item.dietResults);
           return (
-            <View style={[styles.item, { backgroundColor: config.bg }]}>
+            <View style={[styles.item, { backgroundColor: status.bg }]}>
               <View style={styles.itemLeft}>
                 <Text style={styles.productName}>{item.productName ?? 'Unknown Product'}</Text>
                 <Text style={styles.barcode}>{item.barcode}</Text>
                 <Text style={styles.date}>{new Date(item.scannedAt).toLocaleDateString()}</Text>
               </View>
-              <View style={[styles.badge, { backgroundColor: config.color }]}>
-                <Text style={styles.badgeText}>{config.label}</Text>
+              <View style={[styles.badge, { backgroundColor: status.color }]}>
+                <Text style={styles.badgeText}>{status.label}</Text>
               </View>
             </View>
           );

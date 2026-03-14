@@ -1,14 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { ScanRecord } from '../types';
 
 const HISTORY_KEY = 'glutenscan_history';
 const MAX_HISTORY = 10;
-
-export interface ScanRecord {
-  barcode: string;
-  productName: string | null;
-  status: 'contains_gluten' | 'no_gluten_detected' | 'unknown_product';
-  scannedAt: string;
-}
 
 export async function saveToHistory(record: ScanRecord): Promise<void> {
   const existing = await getHistory();

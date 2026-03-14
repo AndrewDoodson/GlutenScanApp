@@ -1,82 +1,127 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import {
+  View, Text, StyleSheet, ScrollView,
+  TouchableOpacity, SafeAreaView,
+} from 'react-native';
+import { DietResult } from '../types';
 
 const STATUS_CONFIG = {
-  contains_gluten: {
-    color: '#C0392B', bg: '#FDEDEC', emoji: '🚫', label: 'Contains Gluten',
-  },
-  no_gluten_detected: {
-    color: '#1E8449', bg: '#EAFAF1', emoji: '✅', label: 'No Gluten Ingredients Detected',
-  },
-  unknown_product: {
-    color: '#B7950B', bg: '#FEF9E7', emoji: '❓', label: 'Unknown / Product Not Found',
-  },
+  compatible: { color: '#1E8449', bg: '#EAFAF1', icon: '✅', label: 'Compatible' },
+  not_compatible: { color: '#C0392B', bg: '#FDEDEC', icon: '⚠️', label: 'Not compatible' },
+  unknown: { color: '#B7950B', bg: '#FEF9E7', icon: '❓', label: 'No data' },
 };
 
-export default function ResultScreen({ route, navigation }) {
+export default function ResultScreen({ route, navigation }: any) {
   const { result } = route.params;
-  const config = STATUS_CONFIG[result.status];
+
+  const overallSafe = result.dietResults.every(
+    (r: DietResult) => r.status === 'compatible'
+  );
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: config.bg }]}>
-      <View style={[styles.resultCard, { borderColor: config.color }]}>
-        <Text style={styles.emoji}>{config.emoji}</Text>
-        <Text style={[styles.statusLabel, { color: config.color }]}>{config.label}</Text>
-        {result.productName && (
-          <Text style={styles.productName}>{result.productName}</Text>
-        )}
-        {result.detectedGlutenIngredients?.length > 0 && (
-          <Text style={styles.detected}>
-            Found: {result.detectedGlutenIngredients.join(', ')}
+    <SafeAreaView style={styles.container}>
+      <ScrollView contentContainerStyle={styles.scroll}>
+
+        <View style={styles.productCard}>
+          <Text style={styles.productName}>
+            {result.productName ?? 'Unknown Product'}
           </Text>
-        )}
-      </View>
-
-      {result.ingredients && (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Ingredients</Text>
-          <Text style={styles.ingredients}>{result.ingredients}</Text>
+          {result.brand && (
+            <Text style={styles.brand}>{result.brand}</Text>
+          )}
         </View>
-      )}
 
-      <View style={styles.disclaimer}>
-        <Text style={styles.disclaimerText}>
-          ⚠️ This result is informational only. Always verify ingredients on the product label.
-        </Text>
-      </View>
+        <View style={[
+          styles.banner,
+          { backgroundColor: overallSafe ? '#EAFAF1' : '#FDEDEC' }
+        ]}>
+          <Text style={styles.bannerText}>
+            {overallSafe
+              ? '✅ Compatible with all your diets'
+              : '⚠️ Not compatible with one or more diets'}
+          </Text>
+        </View>
 
-      <TouchableOpacity style={styles.scanAgain} onPress={() => navigation.goBack()}>
-        <Text style={styles.scanAgainText}>Scan Another Product</Text>
-      </TouchableOpacity>
-    </ScrollView>
+        <Text style={styles.sectionTitle}>Diet Analysis</Text>
+        {result.dietResults.map((dietResult: DietResult) => {
+          const config = STATUS_CONFIG[dietResult.status];
+          return (
+            <View
+              key={dietResult.dietKey}
+              style={[styles.dietRow, { backgroundColor: config.bg }]}
+            >
+              <View style={styles.dietRowHeader}>
+                <Text style={styles.dietIcon}>{config.icon}</Text>
+                <Text style={[styles.dietLabel, { color: config.color }]}>
+                  {dietResult.label}
+                </Text>
+                <Text style={[styles.dietStatus, { color: config.color }]}>
+                  {config.label}
+                </Text>
+              </View>
+              {dietResult.triggeredIngredients.length > 0 && (
+                <Text style={styles.triggers}>
+                  Contains: {dietResult.triggeredIngredients.join(', ')}
+                </Text>
+              )}
+            </View>
+          );
+        })}
+
+        {result.ingredients && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Full Ingredient List</Text>
+            <Text style={styles.ingredients}>{result.ingredients}</Text>
+          </View>
+        )}
+
+        <View style={styles.disclaimer}>
+          <Text style={styles.disclaimerText}>
+            ⚠️ This result is informational only. Always verify ingredients on
+            the product label. Cross contamination warnings are not detected.
+          </Text>
+        </View>
+
+        <TouchableOpacity style={styles.scanAgain} onPress={() => navigation.goBack()}>
+          <Text style={styles.scanAgainText}>Scan Another Product</Text>
+        </TouchableOpacity>
+
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  resultCard: {
-    margin: 20, padding: 24, backgroundColor: '#fff',
-    borderRadius: 16, borderWidth: 2, alignItems: 'center',
-    shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 8, elevation: 3,
+  container: { flex: 1, backgroundColor: '#f9f9f9' },
+  scroll: { padding: 16 },
+  productCard: {
+    backgroundColor: '#fff', padding: 20, borderRadius: 14,
+    marginBottom: 12, elevation: 2,
   },
-  emoji: { fontSize: 52, marginBottom: 12 },
-  statusLabel: { fontSize: 22, fontWeight: '700', textAlign: 'center' },
-  productName: {
-    marginTop: 10, fontSize: 16, color: '#333',
-    textAlign: 'center', fontWeight: '500',
+  productName: { fontSize: 20, fontWeight: '700', color: '#111' },
+  brand: { fontSize: 14, color: '#888', marginTop: 4 },
+  banner: { padding: 14, borderRadius: 10, marginBottom: 20, alignItems: 'center' },
+  bannerText: { fontSize: 15, fontWeight: '600', color: '#333' },
+  sectionTitle: {
+    fontSize: 13, fontWeight: '700', color: '#555',
+    textTransform: 'uppercase', marginBottom: 10, marginTop: 4,
   },
-  detected: { marginTop: 8, fontSize: 14, color: '#888' },
-  section: { marginHorizontal: 20, marginBottom: 16 },
-  sectionTitle: { fontSize: 13, fontWeight: '700', color: '#555', marginBottom: 6, textTransform: 'uppercase' },
-  ingredients: { fontSize: 14, color: '#444', lineHeight: 22 },
+  dietRow: { padding: 14, borderRadius: 12, marginBottom: 10 },
+  dietRowHeader: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  dietIcon: { fontSize: 18 },
+  dietLabel: { fontSize: 15, fontWeight: '600', flex: 1 },
+  dietStatus: { fontSize: 13, fontWeight: '500' },
+  triggers: { fontSize: 13, color: '#555', marginTop: 6, marginLeft: 26 },
+  section: { marginTop: 16 },
+  ingredients: { fontSize: 13, color: '#444', lineHeight: 20 },
   disclaimer: {
-    margin: 20, padding: 14, backgroundColor: '#FFF8E1',
+    marginTop: 20, padding: 14, backgroundColor: '#FFF8E1',
     borderRadius: 10, borderLeftWidth: 4, borderLeftColor: '#F59E0B',
   },
-  disclaimerText: { fontSize: 13, color: '#6B5A00', lineHeight: 20 },
+  disclaimerText: { fontSize: 12, color: '#6B5A00', lineHeight: 18 },
   scanAgain: {
-    marginHorizontal: 20, marginBottom: 40,
-    backgroundColor: '#111', padding: 16, borderRadius: 30, alignItems: 'center',
+    backgroundColor: '#111', padding: 16, borderRadius: 30,
+    alignItems: 'center', marginTop: 16, marginBottom: 24,
   },
   scanAgainText: { color: '#fff', fontSize: 16, fontWeight: '600' },
 });
